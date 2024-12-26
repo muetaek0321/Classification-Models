@@ -1,0 +1,3 @@
+train_result_path = "./results/EfficientNetV2_2024-12-25_21-30-01"
+input_path = "../data/test_data"
+gpu = 0

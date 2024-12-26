@@ -1,0 +1,19 @@
+input_path = "../data"
+output_path = "./results"
+gpu = 0
+use_pretrained = true
+
+# 使用するモデルの名前
+model_name = "EfficientNetV2"
+
+[parameters]
+num_epoches = 100
+batch_size = 8
+classes = ["正常品", "欠陥品"]
+
+# 入力画像サイズ: (height, width)
+input_size = [300, 300]
+
+[optimizer]
+lr = 1e-4
+weight_decay = 1e-4
