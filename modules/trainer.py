@@ -5,15 +5,14 @@ import torch
 import torch.nn as nn
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 from tqdm import tqdm
 from schedulefree import RAdamScheduleFree
-
-from modules.loader import get_transform
 
 
 # エラー対処
@@ -30,6 +29,7 @@ class Trainer:
         criterion: nn.CrossEntropyLoss,
         train_dataloader: DataLoader,
         val_dataloader: DataLoader,
+        classes: list[str],
         device: torch.device | str,
         output_path: str | Path
     ) -> None:
@@ -40,6 +40,7 @@ class Trainer:
         self.criterion = criterion
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
+        self.classes = classes
         self.device = device
         self.output_path = Path(output_path)
         
@@ -122,6 +123,9 @@ class Trainer:
         epoch_val_acc = accuracy_score(true_lbls, pred_lbls)
         self.log["val_accuracy"].append(epoch_val_acc)
         
+        # 混同行列の出力
+        self.output_confusion_matrix(true_lbls, pred_lbls)
+        
         # 最良のLossを判定
         if self.best_loss > epoch_val_loss:
             self.best_model = deepcopy(self.model)
@@ -172,6 +176,21 @@ class Trainer:
         
         plt.tight_layout()
         plt.savefig(self.output_path.joinpath("learning_curve.png"))
+        
+        plt.close()
+        
+    def output_confusion_matrix(
+        self,
+        true: list,
+        pred: list
+    ) -> None:
+        """混同行列の出力
+        """
+        cm = confusion_matrix(true, pred, labels=range(len(self.classes)))
+        sns.heatmap(cm, annot=True, fmt='d')
+        
+        plt.tight_layout()
+        plt.savefig(self.output_path.joinpath("confusion_matrix.png"))
         
         plt.close()
         

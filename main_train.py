@@ -56,9 +56,10 @@ def main():
     dataset = load_dataset("Bingsu/Human_Action_Recognition")
     
     # Datasetの作成
-    train_dataset = ClassificationDataset(dataset["train"], 
+    sp = int(len(dataset["train"]) * 0.8)
+    train_dataset = ClassificationDataset(dataset["train"].select(range(0, sp)),
                                           input_size, phase="train")
-    val_dataset = ClassificationDataset(dataset["test"],
+    val_dataset = ClassificationDataset(dataset["train"].select(range(sp, len(dataset["train"]))),
                                         input_size, phase="val")
     print(f"データ分割 train:val = {len(train_dataset)}:{len(val_dataset)}")
     
@@ -88,6 +89,7 @@ def main():
         criterion=criterion,
         train_dataloader=train_dataloader,
         val_dataloader=val_dataloader,
+        classes=train_dataset.classes,
         device=device,
         output_path=output_path
     )
