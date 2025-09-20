@@ -3,7 +3,7 @@ from typing import Any
 
 import torch
 import torch.nn as nn
-from torchvision.models import efficientnet_v2_s
+import timm
 
 
 def get_model_train(
@@ -28,9 +28,25 @@ def get_model_train(
     """
     if model_name == "EfficientNetV2":
         # モデル読み込みと出力の設定変更
-        model = model_efficientnet_v2(num_classes)
-        # モデルパラメータの取得
-        params = model.parameters()
+        model = timm.create_model(
+            'efficientnetv2_rw_m.agc_in1k', 
+            pretrained=use_pretrained, num_classes=num_classes
+        )
+    elif model_name == "VisionTransformer":
+        # モデル読み込みと出力の設定変更
+        model = timm.create_model(
+            'vit_base_patch16_224', 
+            pretrained=use_pretrained, num_classes=num_classes
+        )
+    elif model_name == "DeiT":
+        # モデル読み込みと出力の設定変更
+        model = timm.create_model(
+            'deit_base_distilled_patch16_224', 
+            pretrained=use_pretrained, num_classes=num_classes
+        )
+    
+    # モデルパラメータの取得
+    params = model.parameters()
         
     return model, params
 
@@ -54,24 +70,26 @@ def get_model_inference(
     """
     if model_name == "EfficientNetV2":
         # モデル読み込みと出力の設定変更
-        model = model_efficientnet_v2(num_classes)
+        model = timm.create_model(
+            'efficientnetv2_rw_m.agc_in1k', 
+            pretrained=False, num_classes=num_classes
+        )
         # 学習済みモデルの読み込み
         weight = torch.load(weight_path, map_location=device, weights_only=True)
         model.load_state_dict(weight)
+    elif model_name == "VisionTransformer":
+        model = timm.create_model(
+            'vit_base_patch16_224', 
+            pretrained=False, num_classes=num_classes
+        )
+        weight = torch.load(weight_path, map_location=device, weights_only=True)
+        model.load_state_dict(weight)
+    elif model_name == "DeiT":
+        model = timm.create_model(
+            'deit_base_distilled_patch16_224', 
+            pretrained=False, num_classes=num_classes
+        )
+        weight = torch.load(weight_path, map_location=device, weights_only=True)
+        model.load_state_dict(weight)
         
-    return model
-
-
-def model_efficientnet_v2(
-    num_classes: int,
-) -> nn.Module:
-    """EfficientNetV2
-    
-    Args:
-        num_classes (int): 判定クラス数
-    """
-    model = efficientnet_v2_s(weights='DEFAULT')
-    in_features = model.classifier[1].in_features
-    model.classifier[1] = nn.Linear(in_features, num_classes)
-    
     return model

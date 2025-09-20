@@ -4,13 +4,15 @@ use_pretrained = true
 
 # 使用するモデルの名前
 model_name = "EfficientNetV2"
+#model_name = "VisionTransformer"
+#model_name = "DeiT"
 
 [parameters]
 num_epoches = 100
-batch_size = 8
+batch_size = 32
 
 # 入力画像サイズ: (height, width)
-input_size = [300, 300]
+input_size = [224, 224]
 
 [optimizer]
 lr = 1e-4
