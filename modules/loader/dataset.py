@@ -1,7 +1,6 @@
-from pathlib import Path
-
 import numpy as np
 from torch.utils.data import Dataset
+from datasets.arrow_dataset import Dataset as HFDataset
 
 from .augmentation import get_transform
 from modules.utils import imread_jpn
@@ -15,8 +14,7 @@ class ClassificationDataset(Dataset):
     
     def __init__(
         self,
-        img_path_list: list[Path],
-        label_list: list[Path],
+        dataset: HFDataset,
         input_size: list[int],
         phase: str
     ) -> None:
@@ -28,10 +26,12 @@ class ClassificationDataset(Dataset):
             input_size (list): 入力画像サイズ
             phase (str): データセットの種類
         """
-        self.img_path_list = img_path_list
-        self.label_list = label_list
+        self.dataset = dataset
         self.input_size = input_size
         self.phase = phase
+        
+        self.classes = dataset.features["labels"].names
+        self.num_classes = dataset.features["labels"].num_classes
         
         # DataAugmentationの準備
         self.transform = get_transform(self.input_size, self.phase)
@@ -40,7 +40,7 @@ class ClassificationDataset(Dataset):
         self
     ) -> int:
         """Datasetの長さを返す"""
-        return len(self.img_path_list)
+        return len(self.dataset)
     
     def __getitem__(
         self, 
@@ -55,14 +55,12 @@ class ClassificationDataset(Dataset):
             np.ndarray: 画像
             list: アノテーション
         """
-        # 画像とアノテーションのパスを取得
-        img_path, lbl = self.img_path_list[index], self.label_list[index]
-        
-        # 画像読み込み
-        img = imread_jpn(img_path)
+        # 画像とラベルを取得
+        data = self.dataset[index]
+        img, lbl = data["image"], data["labels"]
             
         # DataAugmentationの適用
-        transformed = self.transform(image=img)
+        transformed = self.transform(image=np.array(img))
         img_trans = transformed['image']
         
         return img_trans, lbl

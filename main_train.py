@@ -1,17 +1,18 @@
 import os
-os.environ["TORCH_HOME"] = "pretrained"
+os.environ["TORCH_HOME"] = "./.cache/torch"
+os.environ["HF_HOME"] = "./.cache/huggingface"
 from pathlib import Path
 import shutil
 
 import torch
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
-from torch.optim import AdamW
 import toml
 from schedulefree import RAdamScheduleFree
+from datasets import load_dataset
 
 from modules.utils import fix_seeds, now_date_str, ProcessTimeManager
-from modules.loader import make_pathlist, ClassificationDataset
+from modules.loader import ClassificationDataset
 from modules.models import get_model_train
 from modules.trainer import Trainer
 
@@ -32,38 +33,34 @@ def main():
     use_pretrained = cfg["use_pretrained"]
     
     ## 入出力パス
-    input_path = Path(cfg["input_path"])
     output_path = Path(cfg["output_path"]).joinpath(f"{model_name}_{now_date_str()}")
     output_path.mkdir(parents=True, exist_ok=True)
     
     ## 各種パラメータ
     num_epoches = cfg["parameters"]["num_epoches"]
     batch_size = cfg["parameters"]["batch_size"]
-    classes = cfg["parameters"]["classes"]
-    num_classes = len(classes)
     input_size = cfg["parameters"]["input_size"]
     lr = cfg["optimizer"]["lr"]
-    weight_decay = cfg["optimizer"]["weight_decay"]
     
     #デバイスの設定
     gpu = cfg["gpu"]
     if torch.cuda.is_available() and (gpu >= 0):
-        device = torch.device(f"cuda:{gpu}")
+        device = torch.device(f"cuda")
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
     else:
         device = torch.device("cpu")
     print(f"使用デバイス {device}")
     
-    # データのパスリストを作成
-    train_df, val_df = make_pathlist(input_path)
-    print(f"データ分割 train:val = {len(train_df)}:{len(val_df)}")
+    # Datasetの読み込み
+    # https://huggingface.co/datasets/Bingsu/Human_Action_Recognition
+    dataset = load_dataset("Bingsu/Human_Action_Recognition")
+    
     # Datasetの作成
-    train_dataset = ClassificationDataset(train_df["path"].tolist(), 
-                                          train_df["label"].tolist(), 
+    train_dataset = ClassificationDataset(dataset["train"], 
                                           input_size, phase="train")
-    val_dataset = ClassificationDataset(val_df["path"].tolist(), 
-                                        val_df["label"].tolist(),
+    val_dataset = ClassificationDataset(dataset["test"],
                                         input_size, phase="val")
+    print(f"データ分割 train:val = {len(train_dataset)}:{len(val_dataset)}")
     
     # DataLoaderの作成
     train_dataloader = DataLoader(train_dataset, batch_size, shuffle=True, 
@@ -72,10 +69,13 @@ def main():
                                 num_workers=0, pin_memory=True)
     
     # モデルの定義
-    model, params = get_model_train(model_name, num_classes, use_pretrained)
+    model, params = get_model_train(
+        model_name=model_name, 
+        num_classes=train_dataset.num_classes, 
+        use_pretrained=use_pretrained
+    )
 
     # optimizerの定義
-    # optimizer = AdamW(params, lr=lr, weight_decay=weight_decay)
     optimizer = RAdamScheduleFree(params, lr=lr)
     
     # 損失関数の定義

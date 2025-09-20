@@ -17,10 +17,6 @@ def get_transform(
     """
     if phase == "train":
         aug_list = [
-            A.Blur(blur_limit=3),
-            A.GaussNoise(var_limit=(2, 10)),
-            A.HorizontalFlip(),
-            A.RandomBrightnessContrast(),
             A.Resize(*input_size),
             A.Normalize(),
             ToTensorV2()

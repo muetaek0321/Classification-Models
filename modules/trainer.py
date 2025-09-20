@@ -5,13 +5,15 @@ import torch
 import torch.nn as nn
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 from schedulefree import RAdamScheduleFree
+
+from modules.loader import get_transform
 
 
 # エラー対処
@@ -64,7 +66,7 @@ class Trainer:
         iter_train_loss = []
         pred_lbls, true_lbls = [], []
         
-        for imgs, lbls in tqdm(self.train_dataloader, desc="train"):
+        for imgs, lbls in tqdm(self.train_dataloader, desc="train"):                        
             imgs, lbls = imgs.to(self.device), lbls.to(self.device)
             
             self.optimizer.zero_grad()
