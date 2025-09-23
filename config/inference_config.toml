@@ -1,3 +1,2 @@
-train_result_path = "./results/EfficientNetV2_2024-12-25_21-30-01"
-input_path = "../data/test_data"
+train_result_path = "results/DeiT_2025-09-21_14-57-04"
 gpu = 0

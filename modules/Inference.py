@@ -5,9 +5,10 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import pandas as pd
+import numpy as np
 
 from .loader.augmentation import get_transform
-from .utils import imread_jpn
+from modules.utils import imwrite_jpn
 
 
 class Inference:
@@ -17,6 +18,7 @@ class Inference:
         self,
         model: nn.Module,
         input_size: list[int],
+        classes: list[str],
         device: torch.device | str,
         output_path: str | Path
     ) -> None:
@@ -24,8 +26,9 @@ class Inference:
         """
         self.model = model
         self.input_size = input_size
+        self.classes = classes
         self.device = device
-        self.output_path = Path(output_path)
+        self.output_path = Path(output_path).joinpath("inference")
         
         # 学習の準備
         self.model.to(device)
@@ -40,17 +43,11 @@ class Inference:
         
     def __call__(
         self,
-        img_path: Path
+        input_img: np.ndarray,
+        ori_img: np.ndarray
     ) -> float:
         """1画像で推論の処理を実行
-        """
-        # 画像読み込み
-        img = imread_jpn(img_path)
-        # 判定画像のファイル名を保存しておく
-        self.img_name_list.append(img_path.name)
-        
-        # 画像の前処理を適用
-        input_img = self.transform(image=img)['image']
+        """        
         input_img = input_img.to(self.device)
         input_img = input_img.unsqueeze(0)
         
@@ -61,23 +58,43 @@ class Inference:
         pred_lbl = output.argmax(dim=1, keepdim=True).detach().cpu().numpy()[0]
         self.pred_lbls.extend(pred_lbl)
         
-    def output_result(
+        self.classification_image(ori_img, pred_lbl[0])
+        
+    def classification_image(
         self,
-        result_file_name: str = "submission"
+        img: np.ndarray,
+        pred_lbl: int
     ) -> None:
-        """判定結果をcsvファイルで出力
+        """分類画像を保存"""
+        class_dir = self.output_path.joinpath(self.classes[pred_lbl])
+        class_dir.mkdir(exist_ok=True, parents=True)
         
-        Args:
-            result_file_name (str): 出力ファイル名
-        """
-        # 結果をDF化
-        df = pd.DataFrame({"img": self.img_name_list, "lbl": self.pred_lbls,
-                           "img_number": [int(Path(img_name).stem) for img_name in self.img_name_list]})
-        # 画像名でソート
-        df_sorted = df.sort_values(by='img_number').loc[:, ["img", "lbl"]]
+        if len(list(class_dir.iterdir())) >= 10:
+            return
         
-        # 出力
-        df_sorted.to_csv(self.output_path.joinpath(f"{result_file_name}.csv"),
-                         encoding='utf-8', index=False, header=False)
+        img_name = f"{len(self.pred_lbls):06}.jpg"
+        img_path = class_dir.joinpath(img_name)
+        
+        # 画像保存
+        imwrite_jpn(img_path, img)
+        
+    # def output_result(
+    #     self,
+    #     result_file_name: str = "submission"
+    # ) -> None:
+    #     """判定結果をcsvファイルで出力
+        
+    #     Args:
+    #         result_file_name (str): 出力ファイル名
+    #     """
+    #     # 結果をDF化
+    #     df = pd.DataFrame({"img": self.img_name_list, "lbl": self.pred_lbls,
+    #                        "img_number": [int(Path(img_name).stem) for img_name in self.img_name_list]})
+    #     # 画像名でソート
+    #     df_sorted = df.sort_values(by='img_number').loc[:, ["img", "lbl"]]
+        
+    #     # 出力
+    #     df_sorted.to_csv(self.output_path.joinpath(f"{result_file_name}.csv"),
+    #                      encoding='utf-8', index=False, header=False)
         
     

@@ -1,13 +1,18 @@
 import os
+os.environ["HF_HOME"] = "./.cache/huggingface"
 from pathlib import Path
 
+import numpy as np
+import cv2
 import torch
 import toml
 from tqdm import tqdm
+from datasets import load_dataset
 
 from modules.Inference import Inference
 from modules.utils import fix_seeds
 from modules.models import get_model_inference
+from modules.loader import ClassificationDataset
 
 
 # 定数
@@ -23,12 +28,11 @@ def main():
     
     ## 入出力パス
     result_path = Path(cfg["train_result_path"])
-    input_path = Path(cfg["input_path"])
     
     #デバイスの設定
     gpu = cfg["gpu"]
     if torch.cuda.is_available() and (gpu >= 0):
-        device = torch.device(f"cuda:{gpu}")
+        device = torch.device(f"cuda")
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
     else:
         device = torch.device("cpu")
@@ -39,10 +43,13 @@ def main():
         cfg_t = toml.load(f)
     model_name = cfg_t["model_name"]
     input_size = cfg_t["parameters"]["input_size"]
-    num_classes = len(cfg_t["parameters"]["classes"])
     
-    # 推論する画像データのパスリストを作成
-    img_path_list = input_path.glob("*")
+    # Datasetの読み込み
+    # https://huggingface.co/datasets/Bingsu/Human_Action_Recognition
+    dataset = load_dataset("Bingsu/Human_Action_Recognition")
+    test_dataset = ClassificationDataset(dataset["test"], input_size, phase="test")
+    classes = dataset["train"].features["labels"].names
+    num_classes = dataset["train"].features["labels"].num_classes
     
     # 自作モデルを使用
     weight_path = list(result_path.glob("*best.pth"))[0]
@@ -52,17 +59,18 @@ def main():
     infer = Inference(
         model=model,
         input_size=input_size,
+        classes=classes,
         device=device,
         output_path=result_path
     )
     
     # 画像を1枚ずつ推論
-    for img_path in tqdm(sorted(list(img_path_list)), desc="inference"):
+    for i in tqdm(range(len(test_dataset)), desc="inference"):
+        input_img, _ = test_dataset[i]
+        ori_img = np.array(dataset["test"]["image"][i])
+        ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
         # 推論
-        infer(img_path)
-        
-    # 結果を出力
-    infer.output_result()
+        infer(input_img, ori_img)
         
 
 if __name__ == "__main__":
