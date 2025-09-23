@@ -3,9 +3,9 @@ gpu = 0
 use_pretrained = true
 
 # 使用するモデルの名前
-model_name = "EfficientNetV2"
+#model_name = "EfficientNetV2"
 #model_name = "VisionTransformer"
-#model_name = "DeiT"
+model_name = "DeiT"
 
 [parameters]
 num_epoches = 100
