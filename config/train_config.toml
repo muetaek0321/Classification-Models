@@ -8,8 +8,8 @@ use_pretrained = true
 model_name = "DeiT"
 
 [parameters]
-num_epoches = 100
-batch_size = 32
+num_epoches = 20
+batch_size = 64
 
 # 入力画像サイズ: (height, width)
 input_size = [224, 224]

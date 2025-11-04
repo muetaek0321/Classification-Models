@@ -26,20 +26,18 @@ def get_model_train(
         nn.Module: モデルアーキテクチャ
         
     """
+    # モデル読み込みと出力の設定変更
     if model_name == "EfficientNetV2":
-        # モデル読み込みと出力の設定変更
         model = timm.create_model(
             'efficientnetv2_rw_m.agc_in1k', 
             pretrained=use_pretrained, num_classes=num_classes
         )
     elif model_name == "VisionTransformer":
-        # モデル読み込みと出力の設定変更
         model = timm.create_model(
             'vit_base_patch16_224', 
             pretrained=use_pretrained, num_classes=num_classes
         )
     elif model_name == "DeiT":
-        # モデル読み込みと出力の設定変更
         model = timm.create_model(
             'deit_base_distilled_patch16_224', 
             pretrained=use_pretrained, num_classes=num_classes
@@ -68,28 +66,25 @@ def get_model_inference(
     Returns:
         nn.Module: モデルアーキテクチャ
     """
+    # モデル読み込みと出力の設定変更
     if model_name == "EfficientNetV2":
-        # モデル読み込みと出力の設定変更
         model = timm.create_model(
             'efficientnetv2_rw_m.agc_in1k', 
             pretrained=False, num_classes=num_classes
         )
-        # 学習済みモデルの読み込み
-        weight = torch.load(weight_path, map_location=device, weights_only=True)
-        model.load_state_dict(weight)
     elif model_name == "VisionTransformer":
         model = timm.create_model(
             'vit_base_patch16_224', 
             pretrained=False, num_classes=num_classes
         )
-        weight = torch.load(weight_path, map_location=device, weights_only=True)
-        model.load_state_dict(weight)
     elif model_name == "DeiT":
         model = timm.create_model(
             'deit_base_distilled_patch16_224', 
             pretrained=False, num_classes=num_classes
         )
-        weight = torch.load(weight_path, map_location=device, weights_only=True)
-        model.load_state_dict(weight)
+        
+    # 学習済みモデルの読み込み
+    weight = torch.load(weight_path, map_location=device, weights_only=True)
+    model.load_state_dict(weight)
         
     return model

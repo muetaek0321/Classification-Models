@@ -187,7 +187,9 @@ class Trainer:
         """混同行列の出力
         """
         cm = confusion_matrix(true, pred, labels=range(len(self.classes)))
-        sns.heatmap(cm, annot=True, fmt='d')
+        cm_norm = cm / cm.sum(axis=1, keepdims=True)
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(cm_norm, annot=cm, fmt="d")
         
         plt.tight_layout()
         plt.savefig(self.output_path.joinpath("confusion_matrix.png"))

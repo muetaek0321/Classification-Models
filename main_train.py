@@ -52,15 +52,12 @@ def main():
     print(f"使用デバイス {device}")
     
     # Datasetの読み込み
-    # https://huggingface.co/datasets/Bingsu/Human_Action_Recognition
-    dataset = load_dataset("Bingsu/Human_Action_Recognition")
+    # https://huggingface.co/datasets/SunnyAgarwal4274/Food_and_Vegetables
+    dataset = load_dataset("imagefolder", data_dir="./dataset")
     
     # Datasetの作成
-    sp = int(len(dataset["train"]) * 0.8)
-    train_dataset = ClassificationDataset(dataset["train"].select(range(0, sp)),
-                                          input_size, phase="train")
-    val_dataset = ClassificationDataset(dataset["train"].select(range(sp, len(dataset["train"]))),
-                                        input_size, phase="val")
+    train_dataset = ClassificationDataset(dataset["train"], input_size, phase="train")
+    val_dataset = ClassificationDataset(dataset["validation"], input_size, phase="val")
     print(f"データ分割 train:val = {len(train_dataset)}:{len(val_dataset)}")
     
     # DataLoaderの作成

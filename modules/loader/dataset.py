@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 from torch.utils.data import Dataset
 from datasets.arrow_dataset import Dataset as HFDataset
@@ -30,8 +31,8 @@ class ClassificationDataset(Dataset):
         self.input_size = input_size
         self.phase = phase
         
-        self.classes = dataset.features["labels"].names
-        self.num_classes = dataset.features["labels"].num_classes
+        self.classes = dataset.features["label"].names
+        self.num_classes = dataset.features["label"].num_classes
         
         # DataAugmentationの準備
         self.transform = get_transform(self.input_size, self.phase)
@@ -57,7 +58,7 @@ class ClassificationDataset(Dataset):
         """
         # 画像とラベルを取得
         data = self.dataset[index]
-        img, lbl = data["image"], data["labels"]
+        img, lbl = data["image"].convert("RGBA").convert("RGB"), data["label"]
             
         # DataAugmentationの適用
         transformed = self.transform(image=np.array(img))
