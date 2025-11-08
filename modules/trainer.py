@@ -47,8 +47,6 @@ class Trainer:
         # 学習の準備
         self.model.to(device)
         self.criterion.to(device)
-        self.best_model = None
-        self.best_epoch = 0
         self.best_loss = np.inf
         
         # ログ保存の準備
@@ -128,27 +126,46 @@ class Trainer:
         
         # 最良のLossを判定
         if self.best_loss > epoch_val_loss:
-            self.best_model = deepcopy(self.model)
-            self.best_epoch = epoch
             self.best_loss = epoch_val_loss
+            # 最良モデルの保存
+            self.save_weight_best(epoch)
+            
+        # 最新モデルの保存
+        self.save_weight_latest(epoch)
             
         return epoch_val_loss, epoch_val_acc
         
-    def save_weight(
-        self
+    def save_weight_best(
+        self,
+        epoch: int
+    ) -> None:
+        """モデルの重みを保存
+        """         
+        # 最良のepochのモデル
+        best_model_name = "model_best.pth"
+        checkpoint = {
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epoch': epoch
+        }
+        torch.save(checkpoint, self.output_path.joinpath(best_model_name))
+        print(f"best model saved: {best_model_name} (best loss: {self.best_loss})")  
+        
+    def save_weight_latest(
+        self,
+        epoch: int
     ) -> None:
         """モデルの重みを保存
         """        
         # 最終epochのモデル
-        epoch = self.log["epoch"][-1]
-        model_name = f"{epoch}_latest.pth"
-        torch.save(self.model.state_dict(), self.output_path.joinpath(model_name))
+        model_name = "model_latest.pth"
+        checkpoint = {
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epoch': epoch
+        }
+        torch.save(checkpoint, self.output_path.joinpath(model_name))
         print(f"model saved: {model_name}")
-        
-        # 最良のepochのモデル
-        best_model_name = f"{self.best_epoch}_best.pth"
-        torch.save(self.best_model.state_dict(), self.output_path.joinpath(best_model_name))
-        print(f"best model saved: {best_model_name} (best loss: {self.best_loss})")  
     
     def output_learning_curve(
         self,

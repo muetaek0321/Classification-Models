@@ -11,28 +11,27 @@ import toml
 from schedulefree import RAdamScheduleFree
 from datasets import load_dataset
 
-from modules.utils import fix_seeds, now_date_str, ProcessTimeManager
+from modules.utils import fix_seeds, now_date_str, ProcessTimeManager, make_train_parser
 from modules.loader import ClassificationDataset
 from modules.models import get_model_train
 from modules.trainer import Trainer
 
-
-# 定数
-CONFIG_PATH = "./config/train_config.toml"
     
 def main():
+    args = make_train_parser()
+    
     # 乱数の固定
     fix_seeds()
     
     # 設定ファイルの読み込み
-    with open(CONFIG_PATH, mode="r", encoding="utf-8") as f:
+    with open(args.config, mode="r", encoding="utf-8") as f:
         cfg = toml.load(f)
         
     ## モデル名称
     model_name = cfg["model_name"]
     use_pretrained = cfg["use_pretrained"]
     
-    ## 入出力パス
+    ## 出力パス
     output_path = Path(cfg["output_path"]).joinpath(f"{model_name}_{now_date_str()}")
     output_path.mkdir(parents=True, exist_ok=True)
     
@@ -45,7 +44,7 @@ def main():
     #デバイスの設定
     gpu = cfg["gpu"]
     if torch.cuda.is_available() and (gpu >= 0):
-        device = torch.device(f"cuda")
+        device = torch.device("cuda")
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
     else:
         device = torch.device("cpu")
@@ -92,7 +91,7 @@ def main():
     )
     
     # configを保存
-    shutil.copy2(CONFIG_PATH, output_path)
+    shutil.copy2(args.config, output_path)
     
     # 学習ループを実行
     for i in range(num_epoches):
@@ -112,7 +111,6 @@ def main():
         trainer.output_learning_curve()
     
     # モデルとログの出力
-    trainer.save_weight()
     trainer.output_log()
 
 
