@@ -54,6 +54,30 @@ class Trainer:
                     "train_loss": [], "val_loss": [],
                     "train_accuracy": [], "val_accuracy": []}
         
+        # 途中再開時の開始epochを保持
+        self.resume_epoch = 0
+        
+    def resume_state(
+        self,
+        resume_epoch: int = 0
+    ) -> None:
+        """学習途中の状態に復元
+        """
+        self.resume_epoch = resume_epoch
+        
+        # 以前のログを読み込み
+        log_path = self.output_path.joinpath("training_log.csv")
+        log_df = pd.read_csv(log_path, encoding='utf-8-sig')
+        self.log = log_df.to_dict(orient="list")
+        # 最良のLossを復元
+        self.best_loss = log_df["val_loss"].min()
+        
+        # 読み込んだoptimizerのstateをGPUに渡す
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(self.device)
+        
     def train(
         self,
         epoch: int
@@ -179,6 +203,8 @@ class Trainer:
         ax1.set_title(f"Loss (Epoch:{epoch})")
         ax1.plot(self.log["epoch"], self.log["train_loss"], c='red', label='train')
         ax1.plot(self.log["epoch"], self.log["val_loss"], c='blue', label='val')
+        if self.resume_epoch > 0:
+            ax1.axvline(self.resume_epoch, 0, 1, color='gray', linestyle='dotted')
         ax1.set_xlabel('Epoch')
         ax1.set_ylabel('Loss')
         ax1.legend()
@@ -187,6 +213,8 @@ class Trainer:
         ax2.set_title(f"Accuracy (Epoch:{epoch})")
         ax2.plot(self.log["epoch"], self.log["train_accuracy"], c='red', label='train')
         ax2.plot(self.log["epoch"], self.log["val_accuracy"], c='blue', label='val')
+        if self.resume_epoch > 0:
+            ax2.axvline(self.resume_epoch, 0, 1, color='gray', linestyle='dotted')
         ax2.set_xlabel('Epoch')
         ax2.set_ylabel('Accuracy')
         ax2.legend()

@@ -1,0 +1,132 @@
+import os
+os.environ["TORCH_HOME"] = "./.cache/torch"
+os.environ["HF_HOME"] = "./.cache/huggingface"
+from pathlib import Path
+import shutil
+
+import torch
+from torch.nn import CrossEntropyLoss
+from torch.utils.data import DataLoader
+import toml
+from schedulefree import RAdamScheduleFree
+from datasets import load_dataset
+
+from modules.utils import fix_seeds, now_date_str, ProcessTimeManager, make_train_parser
+from modules.loader import ClassificationDataset
+from modules.models import get_model_train
+from modules.trainer import Trainer
+
+    
+def main():
+    args = make_train_parser()
+    
+    # 乱数の固定
+    fix_seeds()
+    
+    # 途中再開のための設定
+    if args.resume is not None:
+        output_path = Path(args.resume)
+        config_path = next(output_path.glob("*.toml"))
+    else:
+        raise ValueError("途中再開したいモデルのパスを指定してください。")
+    
+    # 設定ファイルの読み込み
+    with open(config_path, mode="r", encoding="utf-8") as f:
+        cfg = toml.load(f)
+        
+    ## モデル名称
+    model_name = cfg["model_name"]
+    use_pretrained = cfg["use_pretrained"]
+    
+    ## 各種パラメータ
+    num_epoches = cfg["parameters"]["num_epoches"]
+    batch_size = cfg["parameters"]["batch_size"]
+    input_size = cfg["parameters"]["input_size"]
+    lr = cfg["optimizer"]["lr"]
+    
+    #デバイスの設定
+    gpu = cfg["gpu"]
+    if torch.cuda.is_available() and (gpu >= 0):
+        device = torch.device("cuda")
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+    else:
+        device = torch.device("cpu")
+    print(f"使用デバイス {device}")
+    
+    # Datasetの読み込み
+    # https://huggingface.co/datasets/SunnyAgarwal4274/Food_and_Vegetables
+    dataset = load_dataset("imagefolder", data_dir="./dataset")
+    
+    # Datasetの作成
+    train_dataset = ClassificationDataset(dataset["train"], input_size, phase="train")
+    val_dataset = ClassificationDataset(dataset["validation"], input_size, phase="val")
+    print(f"データ分割 train:val = {len(train_dataset)}:{len(val_dataset)}")
+    
+    # DataLoaderの作成
+    train_dataloader = DataLoader(train_dataset, batch_size, shuffle=True, 
+                                  num_workers=0, pin_memory=True)
+    val_dataloader = DataLoader(val_dataset, batch_size, shuffle=False, 
+                                num_workers=0, pin_memory=True)
+    
+    # 途中保存した重みの読み込み
+    checkpoint_path = output_path.joinpath("model_latest.pth")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    
+    # モデルの定義
+    model, _ = get_model_train(
+        model_name=model_name, 
+        num_classes=train_dataset.num_classes, 
+        use_pretrained=use_pretrained
+    )
+    # 途中保存の重みに更新
+    model.load_state_dict(checkpoint["model_state_dict"])
+    params = model.parameters()
+
+    # optimizerの定義
+    optimizer = RAdamScheduleFree(params, lr=lr)
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    
+    # 損失関数の定義
+    criterion = CrossEntropyLoss()
+    
+    # Trainerの定義
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
+        classes=train_dataset.classes,
+        device=device,
+        output_path=output_path
+    )
+    
+    # 各種パラメータを学習途中の状態に復元
+    trainer.resume_state(resume_epoch=checkpoint["epoch"])
+    
+    # 学習ループを実行
+    epoch_start = checkpoint["epoch"]
+    for i in range(epoch_start, num_epoches):
+        epoch = i + 1
+        
+        # 訓練
+        train_loss, train_acc = trainer.train(epoch)
+        # 検証
+        val_loss, val_acc = trainer.validation(epoch)
+        
+        # ログの標準出力
+        print(f"Epoch:{epoch}")
+        print(f"  train_loss:{train_loss:.4f}  val_loss:{val_loss:.4f}")
+        print(f"  train_accuracy:{train_acc:.4f}  val_accuracy:{val_acc:.4f}")
+        
+        # 学習の進捗を出力
+        trainer.output_learning_curve()
+    
+    # モデルとログの出力
+    trainer.output_log()
+
+
+if __name__ == "__main__":
+    with ProcessTimeManager(is_print=True) as pt:
+        main()
+    
