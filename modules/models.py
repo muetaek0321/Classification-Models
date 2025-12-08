@@ -32,6 +32,11 @@ def get_model_train(
             'efficientnetv2_rw_m.agc_in1k', 
             pretrained=use_pretrained, num_classes=num_classes
         )
+    if model_name == "SEResNeXt":
+        model = timm.create_model(
+            'timm/seresnext50_32x4d.racm_in1k', 
+            pretrained=use_pretrained, num_classes=num_classes
+        )
     elif model_name == "VisionTransformer":
         model = timm.create_model(
             'vit_base_patch16_224', 
@@ -70,6 +75,11 @@ def get_model_inference(
     if model_name == "EfficientNetV2":
         model = timm.create_model(
             'efficientnetv2_rw_m.agc_in1k', 
+            pretrained=False, num_classes=num_classes
+        )
+    elif model_name == "SEResNeXt":
+        model = timm.create_model(
+            'timm/seresnext50_32x4d.racm_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "VisionTransformer":
