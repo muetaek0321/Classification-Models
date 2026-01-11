@@ -16,8 +16,18 @@ from modules.loader import ClassificationDataset
 from modules.models import get_model_train
 from modules.trainer import Trainer
 
+
+def main() -> None:
+    with ProcessTimeManager(is_print=True) as pt:
+        output_path, device = train()
     
-def main():
+    # 学習全体の実行時間とGPUメモリの使用量を記録
+    with open(output_path.joinpath("process_log.txt"), mode="w", encoding="cp932") as f:
+        f.write(f"学習全体の実行時間: {pt.proc_time}s\n")
+        f.write(f"GPUメモリ使用量: {torch.cuda.max_memory_allocated(device)/1024**2:.1f}MB\n")
+
+    
+def train() -> tuple[Path, torch.device]:
     args = make_train_parser()
     
     # 乱数の固定
@@ -112,9 +122,10 @@ def main():
     
     # モデルとログの出力
     trainer.output_log()
+    
+    return output_path, device
 
 
 if __name__ == "__main__":
-    with ProcessTimeManager(is_print=True) as pt:
-        main()
-    
+    main()
+        
