@@ -4,12 +4,12 @@ use_pretrained = true
 
 # 使用するモデルの名前
 #model_name = "EfficientNetV2"
-#model_name = "SEResNeXt"
-model_name = "VisionTransformer"
+model_name = "SEResNeXt"
+#model_name = "VisionTransformer"
 #model_name = "DeiT"
 
 [parameters]
-num_epoches = 20
+num_epoches = 50
 batch_size = 48
 
 # 入力画像サイズ: (height, width)

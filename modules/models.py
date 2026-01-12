@@ -74,7 +74,7 @@ def get_model_inference(
     # モデル読み込みと出力の設定変更
     if model_name == "EfficientNetV2":
         model = timm.create_model(
-            'efficientnetv2_rw_m.agc_in1k', 
+            'timm/efficientnetv2_rw_m.agc_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "SEResNeXt":
@@ -84,12 +84,12 @@ def get_model_inference(
         )
     elif model_name == "VisionTransformer":
         model = timm.create_model(
-            'vit_base_patch16_224', 
+            'timm/vit_base_patch16_224.augreg2_in21k_ft_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "DeiT":
         model = timm.create_model(
-            'deit_base_distilled_patch16_224', 
+            'timm/deit_base_distilled_patch16_224.fb_in1k', 
             pretrained=False, num_classes=num_classes
         )
         
