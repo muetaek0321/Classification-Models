@@ -17,6 +17,7 @@ dependencies = [
     "toml>=0.10.2",
     "torch==2.8.0",
     "tqdm>=4.67.1",
+    "umap-learn>=0.5.11",
 ]
 
 [tool.uv.sources]

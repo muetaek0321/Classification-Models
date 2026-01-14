@@ -60,6 +60,21 @@ class Inference:
         
         self.classification_image(ori_img, pred_lbl[0])
         
+    def feature_extraction(
+        self,
+        input_img: np.ndarray,
+    ) -> np.ndarray:
+        """1画像で特徴量抽出の処理を実行
+        """
+        input_img = input_img.to(self.device)
+        input_img = input_img.unsqueeze(0)
+        
+        with torch.no_grad():
+            output = self.model.forward_features(input_img)
+        
+        return output.detach().cpu().numpy()[0]
+        
+        
     def classification_image(
         self,
         img: np.ndarray,

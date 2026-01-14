@@ -2,9 +2,9 @@ import os
 os.environ["HF_HOME"] = "./.cache/huggingface"
 from pathlib import Path
 
-import numpy as np
-import cv2
 import torch
+import numpy as np
+import umap
 import toml
 from tqdm import tqdm
 from datasets import load_dataset
@@ -64,14 +64,20 @@ def main():
         output_path=result_path
     )
     
-    # 画像を1枚ずつ推論
+    # UMAPインスタンスの作成
+    reducer = umap.UMAP(n_components=3)
+    
+    # 画像を1枚ずつ特徴量抽出
+    features = []
     for i in tqdm(range(len(test_dataset)), desc="inference"):
         input_img, _ = test_dataset[i]
-        ori_img = np.array(dataset["test"]["image"][i])
-        ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
-        # 推論
-        infer(input_img, ori_img)
-        
+        feat = infer.feature_extraction(input_img)
+        features.append(feat.flatten())
+    
+    # UMAPによる次元削減
+    embeddings = reducer.fit_transform(np.array(features))
+    
+    
 
 if __name__ == "__main__":
     main()

@@ -34,17 +34,17 @@ def get_model_train(
         )
     if model_name == "SEResNeXt":
         model = timm.create_model(
-            'timm/seresnext50_32x4d.racm_in1k', 
+            'seresnext50_32x4d.racm_in1k', 
             pretrained=use_pretrained, num_classes=num_classes
         )
     elif model_name == "VisionTransformer":
         model = timm.create_model(
-            'vit_base_patch16_224', 
+            'vit_base_patch16_224.augreg2_in21k_ft_in1k', 
             pretrained=use_pretrained, num_classes=num_classes
         )
     elif model_name == "DeiT":
         model = timm.create_model(
-            'deit_base_distilled_patch16_224', 
+            'deit_base_distilled_patch16_224.fb_in1k', 
             pretrained=use_pretrained, num_classes=num_classes
         )
     
@@ -74,27 +74,27 @@ def get_model_inference(
     # モデル読み込みと出力の設定変更
     if model_name == "EfficientNetV2":
         model = timm.create_model(
-            'timm/efficientnetv2_rw_m.agc_in1k', 
+            'efficientnetv2_rw_m.agc_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "SEResNeXt":
         model = timm.create_model(
-            'timm/seresnext50_32x4d.racm_in1k', 
+            'seresnext50_32x4d.racm_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "VisionTransformer":
         model = timm.create_model(
-            'timm/vit_base_patch16_224.augreg2_in21k_ft_in1k', 
+            'vit_base_patch16_224.augreg2_in21k_ft_in1k', 
             pretrained=False, num_classes=num_classes
         )
     elif model_name == "DeiT":
         model = timm.create_model(
-            'timm/deit_base_distilled_patch16_224.fb_in1k', 
+            'deit_base_distilled_patch16_224.fb_in1k', 
             pretrained=False, num_classes=num_classes
         )
         
     # 学習済みモデルの読み込み
     weight = torch.load(weight_path, map_location=device, weights_only=True)
-    model.load_state_dict(weight)
+    model.load_state_dict(weight["model_state_dict"])
         
     return model
