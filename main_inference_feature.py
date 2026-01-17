@@ -13,6 +13,7 @@ from modules.Inference import Inference
 from modules.utils import fix_seeds
 from modules.models import get_model_inference
 from modules.loader import ClassificationDataset
+from modules.visualize_features import visualize_features
 
 
 # 定数
@@ -69,14 +70,23 @@ def main():
     
     # 画像を1枚ずつ特徴量抽出
     features = []
+    labels = []
     for i in tqdm(range(len(test_dataset)), desc="inference"):
-        input_img, _ = test_dataset[i]
+        input_img, lbl = test_dataset[i]
         feat = infer.feature_extraction(input_img)
         features.append(feat.flatten())
+        labels.append(lbl)
     
     # UMAPによる次元削減
     embeddings = reducer.fit_transform(np.array(features))
     
+    # 次元削減した特徴量の可視化
+    visualize_features(
+        features=embeddings,
+        labels=labels,
+        classes=classes,
+        save_path=result_path.joinpath("feature_mapping.html")
+    )
     
 
 if __name__ == "__main__":
